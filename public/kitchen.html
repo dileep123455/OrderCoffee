@@ -7,10 +7,20 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header><strong>&#9749; Kitchen orders</strong><a href="index.html">Customer page</a></header>
+<header><strong>&#9749; Kitchen orders</strong></header>
 <main style="max-width:1000px">
-  <p id="empty" class="hidden">No active orders.</p>
-  <div class="grid" id="orders"></div>
+  <section id="login" class="card" style="max-width:360px">
+    <h2>Staff login</h2>
+    <label for="pin">Staff PIN</label>
+    <input type="password" id="pin" autocomplete="off">
+    <button class="full" id="loginBtn">Open kitchen</button>
+    <div class="error" id="loginError"></div>
+  </section>
+  <div id="board" class="hidden">
+    <p><button class="alt" id="logout">Log out</button></p>
+    <p id="empty" class="hidden">No active orders.</p>
+    <div class="grid" id="orders"></div>
+  </div>
 </main>
 <script src="kitchen.js"></script>
 </body>
