@@ -11,6 +11,12 @@ db.exec(fs.readFileSync(path.join(__dirname, 'db', 'schema.sql'), 'utf8'));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+const STAFF_PIN = process.env.STAFF_PIN || '1234';
+function requireStaff(req, res, next) {
+  if (req.get('x-staff-pin') !== STAFF_PIN) return res.status(401).json({ error: 'Wrong PIN' });
+  next();
+}
+
 const STATUSES = ['pending', 'preparing', 'ready', 'delivered', 'cancelled'];
 
 function loadOrder(id) {
@@ -75,13 +81,13 @@ app.get('/api/orders/:id', (req, res) => {
   res.json(o);
 });
 
-app.get('/api/orders', (req, res) => {
+app.get('/api/orders', requireStaff, (req, res) => {
   const rows = db.prepare(`SELECT id FROM orders
     WHERE status IN ('pending','preparing','ready') ORDER BY id ASC`).all();
   res.json(rows.map(r => loadOrder(r.id)));
 });
 
-app.patch('/api/orders/:id/status', (req, res) => {
+app.patch('/api/orders/:id/status', requireStaff, (req, res) => {
   const status = req.body && req.body.status;
   if (!STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status.' });
   const r = db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, parseInt(req.params.id, 10));
