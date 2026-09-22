@@ -1,10 +1,27 @@
 const NEXT = { pending: 'preparing', preparing: 'ready', ready: 'delivered' };
 const BTN = { pending: 'Start preparing', preparing: 'Mark ready', ready: 'Mark delivered' };
+const $ = id => document.getElementById(id);
+let timer = null;
+
+const getPin = () => sessionStorage.getItem('staffPin') || '';
+
+function headers() {
+  return { 'Content-Type': 'application/json', 'x-staff-pin': getPin() };
+}
+
+function showLogin(msg) {
+  clearInterval(timer);
+  sessionStorage.removeItem('staffPin');
+  $('board').classList.add('hidden');
+  $('login').classList.remove('hidden');
+  $('loginError').textContent = msg || '';
+}
 
 async function setStatus(id, status) {
-  await fetch(`/api/orders/${id}/status`, {
-    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status })
+  const r = await fetch(`/api/orders/${id}/status`, {
+    method: 'PATCH', headers: headers(), body: JSON.stringify({ status })
   });
+  if (r.status === 401) return showLogin('Session expired. Enter PIN again.');
   load();
 }
 
@@ -17,10 +34,14 @@ function line(parent, text, bold) {
 }
 
 async function load() {
-  const orders = await (await fetch('/api/orders')).json();
-  const box = document.getElementById('orders');
+  const res = await fetch('/api/orders', { headers: headers() });
+  if (res.status === 401) return showLogin('Wrong PIN.');
+  const orders = await res.json();
+  $('login').classList.add('hidden');
+  $('board').classList.remove('hidden');
+  const box = $('orders');
   box.textContent = '';
-  document.getElementById('empty').classList.toggle('hidden', orders.length > 0);
+  $('empty').classList.toggle('hidden', orders.length > 0);
   orders.forEach(o => {
     const card = document.createElement('div');
     card.className = 'card';
@@ -46,5 +67,18 @@ async function load() {
     box.appendChild(card);
   });
 }
-load();
-setInterval(load, 5000);
+
+function start() {
+  clearInterval(timer);
+  load();
+  timer = setInterval(load, 5000);
+}
+
+$('loginBtn').addEventListener('click', () => {
+  sessionStorage.setItem('staffPin', $('pin').value);
+  start();
+});
+$('pin').addEventListener('keydown', e => { if (e.key === 'Enter') $('loginBtn').click(); });
+$('logout').addEventListener('click', () => showLogin(''));
+
+if (getPin()) start();
