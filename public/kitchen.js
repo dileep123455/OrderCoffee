@@ -34,8 +34,14 @@ function line(parent, text, bold) {
 }
 
 async function load() {
-  const res = await fetch('/api/orders', { headers: headers() });
+  let res;
+  try {
+    res = await fetch('/api/orders', { headers: headers() });
+  } catch (e) {
+    return showLogin('Network error. Check your connection and try again.');
+  }
   if (res.status === 401) return showLogin('Wrong PIN.');
+  if (!res.ok) return showLogin('Server error (' + res.status + '). Try again.');
   const orders = await res.json();
   $('login').classList.add('hidden');
   $('board').classList.remove('hidden');
